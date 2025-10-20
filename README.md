@@ -31,17 +31,3 @@ Copy code
 
 ---
 
-## 💻 Step 2: Initialize Git locally
-
-Open **PowerShell** (or Git Bash) inside your project folder:
-PS C:\Users\jagra\Desktop\DAU\Introduction to Programming\Snake Game>
-
-sql
-Copy code
-
-Then run these commands one by one 👇
-
-```bash
-git init
-git add .
-git commit -m "Initial commit: Added Snake Game project"
