@@ -1,0 +1,27 @@
+#ifndef GAME_H
+#define GAME_H
+
+#include "Snake.h"
+#include "Food.h"
+
+class Game {
+private:
+    static const int WIDTH = 20;
+    static const int HEIGHT = 20;
+    
+    Snake snake;
+    Food food;
+    int score;
+    bool gameOver;
+    
+    void Draw();
+    void Input();
+    void Logic();
+    void GameOverScreen();
+    
+public:
+    Game();
+    void Run();
+};
+
+#endif
