@@ -52,29 +52,55 @@ void Game::Draw() {
         cout << "#";
     cout << endl;
     
-    cout << "Score: " << score << "   " << endl;  // Extra spaces to clear previous text
-    cout << "Controls: WASD to move, X to exit    " << endl;
+    cout << "Score: " << score << "   " << endl;
+    cout << "Controls: WASD or Arrow Keys to move, X to exit    " << endl;
 }
 
 void Game::Input() {
-    if (_kbhit()) {
-        char key = _getch();
-        switch (key) {
-            case 'w': case 'W':
-                snake.ChangeDirection(UP);
-                break;
-            case 's': case 'S':
-                snake.ChangeDirection(DOWN);
-                break;
-            case 'a': case 'A':
-                snake.ChangeDirection(LEFT);
-                break;
-            case 'd': case 'D':
-                snake.ChangeDirection(RIGHT);
-                break;
-            case 'x': case 'X':
-                gameOver = true;
-                break;
+    // Clear any buffered keys
+    while (_kbhit()) {
+        int key = _getch();
+        
+        // Handle arrow keys (they produce two codes: 224/0 + arrow code)
+        if (key == 224 || key == 0) {
+            // Arrow key pressed, get the actual arrow key code
+            if (_kbhit()) {
+                int arrowKey = _getch();
+                switch (arrowKey) {
+                    case 72: // Up arrow
+                        snake.ChangeDirection(UP);
+                        break;
+                    case 80: // Down arrow
+                        snake.ChangeDirection(DOWN);
+                        break;
+                    case 75: // Left arrow
+                        snake.ChangeDirection(LEFT);
+                        break;
+                    case 77: // Right arrow
+                        snake.ChangeDirection(RIGHT);
+                        break;
+                }
+            }
+        }
+        // Handle WASD keys and exit
+        else {
+            switch (key) {
+                case 'w': case 'W':
+                    snake.ChangeDirection(UP);
+                    break;
+                case 's': case 'S':
+                    snake.ChangeDirection(DOWN);
+                    break;
+                case 'a': case 'A':
+                    snake.ChangeDirection(LEFT);
+                    break;
+                case 'd': case 'D':
+                    snake.ChangeDirection(RIGHT);
+                    break;
+                case 'x': case 'X':
+                    gameOver = true;
+                    break;
+            }
         }
     }
 }
