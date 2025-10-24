@@ -3,6 +3,7 @@
 
 #include "Snake.h"
 #include "Food.h"
+#include "HighScore.h"
 
 class Game {
 private:
@@ -11,6 +12,7 @@ private:
     
     Snake snake;
     Food food;
+    HighScore highScore;
     int score;
     bool gameOver;
     
@@ -18,6 +20,8 @@ private:
     void Input();
     void Logic();
     void GameOverScreen();
+    void EnterHighScore();
+    void Reset();
     
 public:
     Game();
