@@ -15,6 +15,7 @@ private:
     HighScore highScore;
     int score;
     bool gameOver;
+    bool paused;  // Add paused state
     
     void Draw();
     void Input();
@@ -22,6 +23,7 @@ private:
     void GameOverScreen();
     void EnterHighScore();
     void Reset();
+    void PauseGame();  // Add pause method
     
 public:
     Game();
