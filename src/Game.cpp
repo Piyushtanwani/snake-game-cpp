@@ -7,7 +7,7 @@
 
 using namespace std;
 
-Game::Game() : snake(WIDTH, HEIGHT), food(WIDTH, HEIGHT), score(0), gameOver(false) {
+Game::Game() : snake(WIDTH, HEIGHT), food(WIDTH, HEIGHT), score(0), gameOver(false), paused(false) {
     food.Generate(snake);
 }
 
@@ -20,6 +20,7 @@ void Game::Reset() {
     food.Generate(snake);
     score = 0;
     gameOver = false;
+    paused = false;
 }
 
 void Game::Draw() {
@@ -55,10 +56,15 @@ void Game::Draw() {
     
     // Score info
     buffer += "Score: " + to_string(score) + "               \n";
-    if (highScore.IsHighScore(score)) {
-        buffer += "High Score Potential!        \n";
+    
+    if (paused) {
+        buffer += "*** GAME PAUSED *** Press P to resume\n";
     } else {
-        buffer += "Controls: WASD/Arrows, X exit\n";
+        if (highScore.IsHighScore(score)) {
+            buffer += "High Score Potential!        \n";
+        } else {
+            buffer += "Controls: WASD/Arrows, P=Pause, X=Exit\n";
+        }
     }
     buffer += "                              \n";
     
@@ -71,6 +77,14 @@ void Game::Draw() {
 void Game::Input() {
     if (_kbhit()) {
         int key = _getch();
+        
+        // If game is paused, only check for resume key (P)
+        if (paused) {
+            if (key == 'p' || key == 'P') {
+                paused = false;
+            }
+            return;
+        }
         
         // Handle arrow keys (they produce two codes: 224 + arrow code)
         if (key == 224) {
@@ -91,7 +105,7 @@ void Game::Input() {
                     break;
             }
         }
-        // Handle WASD keys
+        // Handle WASD keys and other controls
         else {
             switch (key) {
                 case 'w': case 'W':
@@ -106,6 +120,9 @@ void Game::Input() {
                 case 'd': case 'D':
                     snake.ChangeDirection(RIGHT);
                     break;
+                case 'p': case 'P':  // Pause the game
+                    PauseGame();
+                    break;
                 case 'x': case 'X':
                     gameOver = true;
                     break;
@@ -115,6 +132,11 @@ void Game::Input() {
 }
 
 void Game::Logic() {
+    // Don't update game logic if paused
+    if (paused) {
+        return;
+    }
+    
     snake.Move();
     
     // Check collision with walls
@@ -142,6 +164,17 @@ void Game::Logic() {
     }
 }
 
+void Game::PauseGame() {
+    paused = true;
+    
+    // Create a simple pause screen
+    COORD coord = {0, HEIGHT + 4};
+    SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
+    
+    cout << "*** GAME PAUSED ***" << endl;
+    cout << "Press P to resume" << endl;
+}
+
 void Game::EnterHighScore() {
     if (highScore.IsHighScore(score)) {
         system("cls");
@@ -150,13 +183,13 @@ void Game::EnterHighScore() {
         cout << "###############################" << endl;
         cout << "     Your Score: " << score << endl;
         cout << endl;
-        cout << "Enter your name : ";
+        cout << "Enter your name (3 letters): ";
         
         string name;
         cin >> name;
         
-        // Limit to 6 characters
-        if (name.length() > 6) {
+        // Limit to 3 characters
+        if (name.length() > 3) {
             name = name.substr(0, 3);
         }
         
