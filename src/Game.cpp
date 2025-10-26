@@ -11,11 +11,165 @@ Game::Game() : snake(WIDTH, HEIGHT), food(WIDTH, HEIGHT), score(0), gameOver(fal
     food.Generate(snake);
 }
 
-void Game::Reset() {
-    // Clear the console completely before resetting
+void Game::DrawMenuBorder() {
     system("cls");
     
-    // Reset the existing objects
+    // Draw a fancy border for the menu
+    string topBottom = "===================================================";
+    string side = "|                                                 |";
+    
+    cout << topBottom << endl;
+    for (int i = 0; i < 25; i++) {
+        cout << side << endl;
+    }
+    cout << topBottom << endl;
+}
+
+void Game::ShowMainMenu() {
+    static int selectedOption = 0;
+    const int TOTAL_OPTIONS = 4;
+    string options[TOTAL_OPTIONS] = {
+        "Start Game",
+        "View High Scores", 
+        "Help",
+        "Exit"
+    };
+    
+    while (true) {
+        // Draw everything each time, but only when needed
+        DrawMenuBorder();
+        
+        COORD coord = {5, 3};
+        SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
+        cout << "           <<< SNAKE GAME >>>" << endl;
+        
+        coord.Y += 4;
+        SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
+        cout << "Use W/S or Arrow Keys to navigate" << endl;
+        
+        coord.Y += 2;
+        SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
+        
+        // Menu options
+        for (int i = 0; i < TOTAL_OPTIONS; i++) {
+            if (i == selectedOption) {
+                cout << "    > " << options[i] << " <" << endl;
+            } else {
+                cout << "      " << options[i] << "   " << endl;
+            }
+            coord.Y += 1;
+            SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
+        }
+        
+        coord.Y += 2;
+        SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
+        cout << "Press ENTER to select" << endl;
+        
+        // Wait for input without rapid redrawing
+        while (!_kbhit()) {
+            Sleep(100); // Wait for input without redrawing
+        }
+        
+        int key = _getch();
+        
+        if (key == 224) { // Arrow keys
+            int arrowKey = _getch();
+            if (arrowKey == 72) { // Up arrow
+                selectedOption = (selectedOption - 1 + TOTAL_OPTIONS) % TOTAL_OPTIONS;
+            } else if (arrowKey == 80) { // Down arrow
+                selectedOption = (selectedOption + 1) % TOTAL_OPTIONS;
+            }
+        } else {
+            switch (key) {
+                case 'w': case 'W':
+                    selectedOption = (selectedOption - 1 + TOTAL_OPTIONS) % TOTAL_OPTIONS;
+                    break;
+                case 's': case 'S':
+                    selectedOption = (selectedOption + 1) % TOTAL_OPTIONS;
+                    break;
+                case 13: // Enter key
+                    switch (selectedOption) {
+                        case 0: return; // Start Game
+                        case 1: 
+                            highScore.DisplayScores();
+                            break;
+                        case 2: 
+                            ShowHelpScreen();
+                            break;
+                        case 3: 
+                            exit(0);
+                            break;
+                    }
+                    break;
+                case 'x': case 'X':
+                    exit(0);
+                    break;
+            }
+        }
+    }
+}
+
+void Game::ShowHelpScreen() {
+    DrawMenuBorder();
+    
+    COORD coord = {5, 3};
+    SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
+
+    cout << "          <<< HOW TO PLAY >>>          " << endl;
+
+    coord.Y += 2;
+    SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
+    cout << "CONTROLS:" << endl;
+    
+    coord.Y += 1;
+    SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
+    cout << "  W / Up Arrow   - Move Up" << endl;
+    
+    coord.Y += 1;
+    SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
+    cout << "  S / Down Arrow - Move Down" << endl;
+
+    coord.Y += 1;
+    SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
+    cout << "  A / Left Arrow - Move Left" << endl;
+
+    coord.Y += 1;
+    SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
+    cout << "  D / Right Arrow - Move Right" << endl;
+
+    coord.Y += 1;
+    SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
+    cout << "  P - Pause Game" << endl;
+    
+    coord.Y += 1;
+    SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
+    cout << "  X - Exit Game" << endl;
+    
+    coord.Y += 3;
+    SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
+    cout << "GAME RULES:" << endl;
+    
+    coord.Y += 1;
+    SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
+    cout << "  1 Eat food (*) to grow and earn points" << endl;
+    
+    coord.Y += 1;
+    SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
+    cout << "  2 Avoid hitting walls or yourself" << endl;
+    
+    coord.Y += 1;
+    SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
+    cout << "  3 Each food gives 10 points" << endl;
+    
+    coord.Y += 3;
+    SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
+    cout << "Press any key to return to menu..." << endl;
+    
+    _getch();
+}
+
+void Game::Reset() {
+    system("cls");
     snake = Snake(WIDTH, HEIGHT);
     food.Generate(snake);
     score = 0;
@@ -24,17 +178,15 @@ void Game::Reset() {
 }
 
 void Game::Draw() {
-    // Use a single string buffer for better performance
     static string buffer;
     buffer.clear();
     
-    // Top border
+    // Game board
     buffer.append(WIDTH + 2, '#');
     buffer += '\n';
     
-    // Game area
     for (int y = 0; y < HEIGHT; y++) {
-        buffer += '#'; // Left border
+        buffer += '#';
         
         for (int x = 0; x < WIDTH; x++) {
             if (x == snake.GetHeadX() && y == snake.GetHeadY())
@@ -47,28 +199,35 @@ void Game::Draw() {
                 buffer += ' ';
         }
         
-        buffer += "#\n"; // Right border
+        buffer += "#\n";
     }
     
-    // Bottom border
     buffer.append(WIDTH + 2, '#');
     buffer += '\n';
     
-    // Score info
-    buffer += "Score: " + to_string(score) + "               \n";
+    // Score line - fixed width
+    buffer += "Score: " + to_string(score);
+    buffer.append(30 - (7 + to_string(score).length()), ' '); // Pad with spaces
+    buffer += '\n';
     
+    // Status line - fixed width (BOTH messages always show)
     if (paused) {
-        buffer += "*** GAME PAUSED *** Press P to resume\n";
+        buffer += "*** GAME PAUSED *** \n\n  Press P to resume";
+        buffer.append(10, ' '); // Pad with spaces
     } else {
+        // Show both High Score Potential AND Controls
         if (highScore.IsHighScore(score)) {
-            buffer += "High Score Potential!        \n";
+            buffer += "High Score Potential! | Controls: WASD/Arrows, P=Pause, X=Exit";
         } else {
-            buffer += "Controls: WASD/Arrows, P=Pause, X=Exit\n";
+            buffer += "Controls: WASD/Arrows, P=Pause, X=Exit";
+            buffer.append(20, ' '); // Pad with spaces
         }
     }
-    buffer += "                              \n";
+    buffer += '\n';
     
-    // Move cursor and draw everything at once
+    // Clear any remaining lines
+    buffer += "                                        \n";
+    
     COORD coord = {0, 0};
     SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
     cout << buffer;
@@ -78,7 +237,6 @@ void Game::Input() {
     if (_kbhit()) {
         int key = _getch();
         
-        // If game is paused, only check for resume key (P)
         if (paused) {
             if (key == 'p' || key == 'P') {
                 paused = false;
@@ -86,60 +244,32 @@ void Game::Input() {
             return;
         }
         
-        // Handle arrow keys (they produce two codes: 224 + arrow code)
         if (key == 224) {
-            // Arrow key pressed, get the actual arrow key code
             int arrowKey = _getch();
             switch (arrowKey) {
-                case 72: // Up arrow
-                    snake.ChangeDirection(UP);
-                    break;
-                case 80: // Down arrow
-                    snake.ChangeDirection(DOWN);
-                    break;
-                case 75: // Left arrow
-                    snake.ChangeDirection(LEFT);
-                    break;
-                case 77: // Right arrow
-                    snake.ChangeDirection(RIGHT);
-                    break;
+                case 72: snake.ChangeDirection(UP); break;
+                case 80: snake.ChangeDirection(DOWN); break;
+                case 75: snake.ChangeDirection(LEFT); break;
+                case 77: snake.ChangeDirection(RIGHT); break;
             }
-        }
-        // Handle WASD keys and other controls
-        else {
+        } else {
             switch (key) {
-                case 'w': case 'W':
-                    snake.ChangeDirection(UP);
-                    break;
-                case 's': case 'S':
-                    snake.ChangeDirection(DOWN);
-                    break;
-                case 'a': case 'A':
-                    snake.ChangeDirection(LEFT);
-                    break;
-                case 'd': case 'D':
-                    snake.ChangeDirection(RIGHT);
-                    break;
-                case 'p': case 'P':  // Pause the game
-                    PauseGame();
-                    break;
-                case 'x': case 'X':
-                    gameOver = true;
-                    break;
+                case 'w': case 'W': snake.ChangeDirection(UP); break;
+                case 's': case 'S': snake.ChangeDirection(DOWN); break;
+                case 'a': case 'A': snake.ChangeDirection(LEFT); break;
+                case 'd': case 'D': snake.ChangeDirection(RIGHT); break;
+                case 'p': case 'P': PauseGame(); break;
+                case 'x': case 'X': gameOver = true; break;
             }
         }
     }
 }
 
 void Game::Logic() {
-    // Don't update game logic if paused
-    if (paused) {
-        return;
-    }
+    if (paused) return;
     
     snake.Move();
     
-    // Check collision with walls
     int headX = snake.GetHeadX();
     int headY = snake.GetHeadY();
     
@@ -149,14 +279,12 @@ void Game::Logic() {
         return;
     }
     
-    // Check collision with self
     if (snake.CheckSelfCollision()) {
         EnterHighScore();
         gameOver = true;
         return;
     }
     
-    // Check if snake ate food
     if (headX == food.GetX() && headY == food.GetY()) {
         snake.Grow();
         score += 10;
@@ -166,13 +294,7 @@ void Game::Logic() {
 
 void Game::PauseGame() {
     paused = true;
-    
-    // Create a simple pause screen
-    COORD coord = {0, HEIGHT + 4};
-    SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
-    
-    cout << "*** GAME PAUSED ***" << endl;
-    cout << "Press P to resume" << endl;
+    // No need to print here - Draw() will handle it
 }
 
 void Game::EnterHighScore() {
@@ -188,20 +310,9 @@ void Game::EnterHighScore() {
         string name;
         cin >> name;
         
-        // Limit to 3 characters
-        if (name.length() > 3) {
-            name = name.substr(0, 3);
-        }
-        
-        // Convert to uppercase
-        for (char& c : name) {
-            c = toupper(c);
-        }
-        
-        // Default if empty
-        if (name.empty()) {
-            name = "AAA";
-        }
+        if (name.length() > 3) name = name.substr(0, 3);
+        for (char& c : name) c = toupper(c);
+        if (name.empty()) name = "AAA";
         
         highScore.AddScore(name, score);
     }
@@ -214,7 +325,6 @@ void Game::GameOverScreen() {
     cout << "########################" << endl;
     cout << "     Final Score: " << score << endl;
     
-    // Check if it's a high score
     if (highScore.IsHighScore(score)) {
         cout << "   NEW HIGH SCORE!   " << endl;
     }
@@ -223,7 +333,8 @@ void Game::GameOverScreen() {
     cout << endl;
     cout << "1. View High Scores" << endl;
     cout << "2. Play Again" << endl;
-    cout << "3. Exit" << endl;
+    cout << "3. Main Menu" << endl;
+    cout << "4. Exit" << endl;
     cout << endl;
     cout << "Choose option: ";
     
@@ -233,35 +344,42 @@ void Game::GameOverScreen() {
     switch (choice) {
         case '1':
             highScore.DisplayScores();
-            // After viewing scores, show this menu again
             GameOverScreen();
             break;
         case '2':
-            // Reset game and start new game
             Reset();
-            Run();  // Restart the game loop
+            StartGame(); // Start game without menu
             break;
         case '3':
-        default:
-            // Exit the game
+            Reset();
+            gameOver = true; // Break out of current game loop
+            return; // Return to Run() which will show main menu
             break;
+        case '4':
+            exit(0);
+            break;
+        default:
+            cout << "Invalid choice...!" << endl;
+            Sleep(1000);
+            GameOverScreen();
     }
 }
 
-void Game::Run() {
-    // Clear screen at the start
+// Start game without showing menu
+void Game::StartGame() {
+    // Clear screen and setup for gameplay
     system("cls");
     
-    // Hide cursor for better appearance
     CONSOLE_CURSOR_INFO cursorInfo;
     GetConsoleCursorInfo(GetStdHandle(STD_OUTPUT_HANDLE), &cursorInfo);
     cursorInfo.bVisible = false;
     SetConsoleCursorInfo(GetStdHandle(STD_OUTPUT_HANDLE), &cursorInfo);
     
-    // Draw initial frame immediately
+    gameOver = false; // Ensure game is not over
+    paused = false;   // Ensure game is not paused
+    
     Draw();
     
-    // Main game loop
     while (!gameOver) {
         Input();
         Logic();
@@ -269,9 +387,18 @@ void Game::Run() {
         Sleep(150);
     }
     
-    // Restore cursor
     cursorInfo.bVisible = true;
     SetConsoleCursorInfo(GetStdHandle(STD_OUTPUT_HANDLE), &cursorInfo);
     
     GameOverScreen();
+}
+
+void Game::Run() {
+    while (true) {
+        // Show main menu first
+        ShowMainMenu();
+        
+        // After menu, start the game
+        StartGame();
+    }
 }
