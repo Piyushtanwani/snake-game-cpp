@@ -36,12 +36,15 @@ void Game::ShowMainMenu() {
     };
     
     while (true) {
-        // Draw everything each time, but only when needed
         DrawMenuBorder();
         
         COORD coord = {5, 3};
         SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
+        
+        // Title in yellow
+        colorManager.SetColor(ColorManager::MENU_TITLE);
         cout << "           <<< SNAKE GAME >>>" << endl;
+        colorManager.ResetColor();
         
         coord.Y += 4;
         SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
@@ -50,16 +53,20 @@ void Game::ShowMainMenu() {
         coord.Y += 2;
         SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
         
-        // Menu options
+        // Menu options with colors
         for (int i = 0; i < TOTAL_OPTIONS; i++) {
             if (i == selectedOption) {
+                colorManager.SetColor(ColorManager::MENU_SELECTED);
                 cout << "    > " << options[i] << " <" << endl;
             } else {
+                colorManager.SetColor(ColorManager::MENU_NORMAL);
                 cout << "      " << options[i] << "   " << endl;
             }
             coord.Y += 1;
             SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
         }
+        
+        colorManager.ResetColor();
         
         coord.Y += 2;
         SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
@@ -67,12 +74,12 @@ void Game::ShowMainMenu() {
         
         // Wait for input without rapid redrawing
         while (!_kbhit()) {
-            Sleep(100); // Wait for input without redrawing
+            Sleep(100);
         }
         
         int key = _getch();
         
-        if (key == 224) { // Arrow keys
+        if (key == 224) {
             int arrowKey = _getch();
             if (arrowKey == 72) { // Up arrow
                 selectedOption = (selectedOption - 1 + TOTAL_OPTIONS) % TOTAL_OPTIONS;
@@ -88,6 +95,7 @@ void Game::ShowMainMenu() {
                     selectedOption = (selectedOption + 1) % TOTAL_OPTIONS;
                     break;
                 case 13: // Enter key
+                    soundManager.PlayMenuSelectSound();
                     switch (selectedOption) {
                         case 0: return; // Start Game
                         case 1: 
@@ -115,11 +123,18 @@ void Game::ShowHelpScreen() {
     COORD coord = {5, 3};
     SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
 
+    // Title in yellow
+    colorManager.SetColor(ColorManager::MENU_TITLE);
     cout << "          <<< HOW TO PLAY >>>          " << endl;
+    colorManager.ResetColor();
 
     coord.Y += 2;
     SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
+    
+    // Section headers in cyan
+    colorManager.SetColor(ColorManager::MENU_SELECTED);
     cout << "CONTROLS:" << endl;
+    colorManager.ResetColor();
     
     coord.Y += 1;
     SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
@@ -147,7 +162,10 @@ void Game::ShowHelpScreen() {
     
     coord.Y += 3;
     SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
+    
+    colorManager.SetColor(ColorManager::MENU_SELECTED);
     cout << "GAME RULES:" << endl;
+    colorManager.ResetColor();
     
     coord.Y += 1;
     SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
@@ -178,59 +196,89 @@ void Game::Reset() {
 }
 
 void Game::Draw() {
-    static string buffer;
-    buffer.clear();
-    
-    // Game board
-    buffer.append(WIDTH + 2, '#');
-    buffer += '\n';
-    
-    for (int y = 0; y < HEIGHT; y++) {
-        buffer += '#';
-        
-        for (int x = 0; x < WIDTH; x++) {
-            if (x == snake.GetHeadX() && y == snake.GetHeadY())
-                buffer += 'O';
-            else if (snake.IsBody(x, y))
-                buffer += 'o';
-            else if (x == food.GetX() && y == food.GetY())
-                buffer += '*';
-            else
-                buffer += ' ';
-        }
-        
-        buffer += "#\n";
-    }
-    
-    buffer.append(WIDTH + 2, '#');
-    buffer += '\n';
-    
-    // Score line - fixed width
-    buffer += "Score: " + to_string(score);
-    buffer.append(30 - (7 + to_string(score).length()), ' '); // Pad with spaces
-    buffer += '\n';
-    
-    // Status line - fixed width (BOTH messages always show)
-    if (paused) {
-        buffer += "*** GAME PAUSED *** \n\n  Press P to resume";
-        buffer.append(10, ' '); // Pad with spaces
-    } else {
-        // Show both High Score Potential AND Controls
-        if (highScore.IsHighScore(score)) {
-            buffer += "High Score Potential! | Controls: WASD/Arrows, P=Pause, X=Exit";
-        } else {
-            buffer += "Controls: WASD/Arrows, P=Pause, X=Exit";
-            buffer.append(20, ' '); // Pad with spaces
-        }
-    }
-    buffer += '\n';
-    
-    // Clear any remaining lines
-    buffer += "                                        \n";
-    
+    // Don't use static string buffer - draw directly with colors
     COORD coord = {0, 0};
     SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
-    cout << buffer;
+
+    cout << "          <<< HOW TO PLAY >>>          " << endl;
+
+    coord.Y += 2;
+    SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
+    cout << "CONTROLS:" << endl;
+    
+    // Set wall color and draw top border
+    colorManager.SetColor(ColorManager::WALL);
+    for (int i = 0; i < WIDTH + 2; i++)
+        cout << '#';
+    cout << endl;
+    
+    // Draw game area
+    for (int y = 0; y < HEIGHT; y++) {
+        // Left border
+        colorManager.SetColor(ColorManager::WALL);
+        cout << '#';
+        
+        for (int x = 0; x < WIDTH; x++) {
+            if (x == snake.GetHeadX() && y == snake.GetHeadY()) {
+                colorManager.SetColor(ColorManager::SNAKE_HEAD); // Bright Yellow
+                cout << 'O';
+                colorManager.SetColor(ColorManager::WALL);
+            }
+            else if (snake.IsBody(x, y)) {
+                colorManager.SetColor(ColorManager::SNAKE_BODY); // Green
+                cout << 'o';
+                colorManager.SetColor(ColorManager::WALL);
+            }
+            else if (x == food.GetX() && y == food.GetY()) {
+                colorManager.SetColor(ColorManager::FOOD); // Bright Red
+                cout << '*';
+                colorManager.SetColor(ColorManager::WALL);
+            }
+            else {
+                cout << ' ';
+            }
+        }
+        
+        // Right border
+        colorManager.SetColor(ColorManager::WALL);
+        cout << '#' << endl;
+    }
+    
+    // Draw bottom border
+    colorManager.SetColor(ColorManager::WALL);
+    for (int i = 0; i < WIDTH + 2; i++)
+        cout << '#';
+    cout << endl;
+    
+    // Reset color for text
+    colorManager.ResetColor();
+    
+    // Score with color - Bright White
+    colorManager.SetColor(ColorManager::SCORE);
+    cout << "Score: " << score;
+    int padding = 30 - (7 + to_string(score).length());
+    if (padding > 0) cout << string(padding, ' ');
+    cout << endl;
+    
+    // Status line with colors
+    if (paused) {
+        colorManager.SetColor(ColorManager::MENU_TITLE); // Bright Yellow
+        cout << "*** GAME PAUSED *** \n\n  Press P to resume" << endl;
+    } else {
+        if (highScore.IsHighScore(score)) {
+            colorManager.SetColor(ColorManager::HIGH_SCORE); // Bright Green
+            cout << "High Score Potential! | Controls: WASD/Arrows, P=Pause, X=Exit" << endl;
+        } else {
+            colorManager.SetColor(ColorManager::SCORE); // Bright White
+            cout << "Controls: WASD/Arrows, P=Pause, X=Exit" << endl;
+        }
+    }
+    
+    // Clear any remaining lines
+    cout << "                              " << endl;
+    
+    // Reset to default color
+    colorManager.ResetColor();
 }
 
 void Game::Input() {
@@ -286,6 +334,7 @@ void Game::Logic() {
     }
     
     if (headX == food.GetX() && headY == food.GetY()) {
+        soundManager.PlayEatSound();  // Food eating sound
         snake.Grow();
         score += 10;
         food.Generate(snake);
@@ -294,16 +343,22 @@ void Game::Logic() {
 
 void Game::PauseGame() {
     paused = true;
-    // No need to print here - Draw() will handle it
+    COORD coord = {0, HEIGHT + 4};
+    SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
+    cout << "*** GAME PAUSED ***" << endl;
+    cout << "Press P to resume" << endl;
 }
 
 void Game::EnterHighScore() {
     if (highScore.IsHighScore(score)) {
         system("cls");
-        cout << "###############################" << endl;
-        cout << "#      NEW HIGH SCORE!       #" << endl;
-        cout << "###############################" << endl;
-        cout << "     Your Score: " << score << endl;
+        
+        // Show simple prompt without the fancy border
+        colorManager.SetColor(ColorManager::HIGH_SCORE); // Bright Green
+        cout << "*** NEW HIGH SCORE! ***" << endl;
+        colorManager.ResetColor();
+        
+        cout << "Your Score: " << score << endl;
         cout << endl;
         cout << "Enter your name (3 letters): ";
         
@@ -315,21 +370,47 @@ void Game::EnterHighScore() {
         if (name.empty()) name = "AAA";
         
         highScore.AddScore(name, score);
+        
+        // Clear the screen after name entry
+        system("cls");
     }
 }
 
 void Game::GameOverScreen() {
     system("cls");
-    cout << "########################" << endl;
-    cout << "#      GAME OVER      #" << endl;
-    cout << "########################" << endl;
-    cout << "     Final Score: " << score << endl;
     
-    if (highScore.IsHighScore(score)) {
-        cout << "   NEW HIGH SCORE!   " << endl;
+    bool isNewHighScore = highScore.IsHighScore(score);
+    
+    if (isNewHighScore) {
+        // Show NEW HIGH SCORE in green instead of GAME OVER
+        colorManager.SetColor(ColorManager::HIGH_SCORE); // Bright Green
+        cout << "##############################" << endl;
+        cout << "#       NEW HIGH SCORE!     #" << endl;
+        cout << "##############################" << endl;
+        
+        // Score in GREEN for new high score
+        colorManager.SetColor(ColorManager::HIGH_SCORE);
+        cout << "        Final Score: " << score << endl;
+        
+        // Bottom border in green
+        colorManager.SetColor(ColorManager::HIGH_SCORE);
+        cout << "##############################" << endl;
+    } else {
+        // Show regular GAME OVER in red
+        colorManager.SetColor(ColorManager::GAME_OVER); // Bright Red
+        cout << "########################" << endl;
+        cout << "#      GAME OVER      #" << endl;
+        cout << "########################" << endl;
+        
+        // Score in White for regular game over
+        colorManager.SetColor(ColorManager::SCORE);
+        cout << "     Final Score: " << score << endl;
+        
+        colorManager.SetColor(ColorManager::GAME_OVER);
+        cout << "########################" << endl;
     }
     
-    cout << "########################" << endl;
+    colorManager.ResetColor();
     cout << endl;
     cout << "1. View High Scores" << endl;
     cout << "2. Play Again" << endl;
@@ -348,13 +429,12 @@ void Game::GameOverScreen() {
             break;
         case '2':
             Reset();
-            StartGame(); // Start game without menu
+            StartGame();
             break;
         case '3':
             Reset();
-            gameOver = true; // Break out of current game loop
-            return; // Return to Run() which will show main menu
-            break;
+            gameOver = true;
+            return;
         case '4':
             exit(0);
             break;
