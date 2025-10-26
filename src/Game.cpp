@@ -199,6 +199,12 @@ void Game::Draw() {
     // Don't use static string buffer - draw directly with colors
     COORD coord = {0, 0};
     SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
+
+    cout << "          <<< HOW TO PLAY >>>          " << endl;
+
+    coord.Y += 2;
+    SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
+    cout << "CONTROLS:" << endl;
     
     // Set wall color and draw top border
     colorManager.SetColor(ColorManager::WALL);
