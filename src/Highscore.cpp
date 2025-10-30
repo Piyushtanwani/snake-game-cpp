@@ -9,7 +9,6 @@ using namespace std;
 const string HighScore::FILENAME = "highscores.txt";
 
 HighScore::HighScore() {
-    // Don't load scores immediately - lazy loading
     scores.clear();
 }
 
@@ -41,7 +40,6 @@ void HighScore::LoadScores() {
             {"DDD", 0},
             {"EEE", 0}
         };
-        // Don't save immediately - save on first actual high score
     }
     
     SortScores();
@@ -60,29 +58,28 @@ void HighScore::SaveScores() {
 void HighScore::SortScores() {
     sort(scores.begin(), scores.end(), 
         [](const ScoreEntry& a, const ScoreEntry& b) {
-            return a.score > b.score; // Descending order
+            return a.score > b.score;
         });
     
-    // Keep only top MAX_ENTRIES
     if (scores.size() > MAX_ENTRIES) {
         scores.resize(MAX_ENTRIES);
     }
 }
 
 bool HighScore::IsHighScore(int score) const {
-    EnsureLoaded(); // Load only when needed
+    EnsureLoaded();
     return scores.size() < MAX_ENTRIES || score > scores.back().score;
 }
 
 void HighScore::AddScore(const std::string& name, int score) {
-    EnsureLoaded(); // Ensure scores are loaded before adding
+    EnsureLoaded();
     scores.push_back({name, score});
     SortScores();
-    SaveScores(); // Only save when actually adding a score
+    SaveScores();
 }
 
 void HighScore::DisplayScores() const {
-    EnsureLoaded(); // Ensure scores are loaded before displaying
+    EnsureLoaded();
     
     system("cls");
     cout << "###############################" << endl;

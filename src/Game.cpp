@@ -4,11 +4,125 @@
 #include <windows.h>
 #include <string>
 #include <algorithm>
+#include <cctype>
 
 using namespace std;
 
 Game::Game() : snake(WIDTH, HEIGHT), food(WIDTH, HEIGHT), score(0), gameOver(false), paused(false) {
-    food.Generate(snake);
+    GenerateObstacles();
+    food.GenerateWithObstacles(snake, obstacles);
+}
+
+void Game::GenerateObstacles() {
+    obstacles.clear();
+    
+    // Initialize random seed
+    srand(static_cast<unsigned int>(time(nullptr)));
+    
+    // Define safe zone in the center where snake starts
+    int safeZoneX = WIDTH / 2;
+    int safeZoneY = HEIGHT / 2;
+    int safeRadius = 4;
+    
+    // Pattern 1: Vertical walls
+    for (int i = 0; i < 3; i++) {
+        int wallX = 5 + (rand() % (WIDTH - 10));
+        int wallY = 3 + (rand() % (HEIGHT - 6));
+        int wallHeight = 3 + (rand() % 4);
+        
+        // Check if wall is too close to safe zone
+        if (abs(wallX - safeZoneX) < safeRadius) continue;
+        
+        for (int y = wallY; y < wallY + wallHeight && y < HEIGHT - 1; y++) {
+            // Don't place on borders and ensure it's not in safe zone
+            if (y > 1 && y < HEIGHT - 1 && abs(y - safeZoneY) >= safeRadius) {
+                obstacles.push_back({wallX, y});
+            }
+        }
+    }
+    
+    // Pattern 2: Horizontal walls
+    for (int i = 0; i < 3; i++) {
+        int wallY = 5 + (rand() % (HEIGHT - 10));
+        int wallX = 3 + (rand() % (WIDTH - 6));
+        int wallWidth = 4 + (rand() % 5);
+        
+        // Check if wall is too close to safe zone
+        if (abs(wallY - safeZoneY) < safeRadius) continue;
+        
+        for (int x = wallX; x < wallX + wallWidth && x < WIDTH - 1; x++) {
+            // Don't place on borders and ensure it's not in safe zone
+            if (x > 1 && x < WIDTH - 1 && abs(x - safeZoneX) >= safeRadius) {
+                obstacles.push_back({x, wallY});
+            }
+        }
+    }
+    
+    // Pattern 3: L-shaped corners
+    for (int i = 0; i < 2; i++) {
+        int cornerX = 3 + (rand() % (WIDTH - 8));
+        int cornerY = 3 + (rand() % (HEIGHT - 8));
+        
+        // Check if corner is too close to safe zone
+        if (abs(cornerX - safeZoneX) < safeRadius + 2 || abs(cornerY - safeZoneY) < safeRadius + 2) continue;
+        
+        // Create L-shape (3 blocks horizontal, 3 blocks vertical)
+        for (int x = cornerX; x < cornerX + 3 && x < WIDTH - 1; x++) {
+            obstacles.push_back({x, cornerY});
+        }
+        for (int y = cornerY; y < cornerY + 3 && y < HEIGHT - 1; y++) {
+            obstacles.push_back({cornerX, y});
+        }
+    }
+    
+    // Pattern 4: Plus signs (+)
+    for (int i = 0; i < 2; i++) {
+        int centerX = 6 + (rand() % (WIDTH - 12));
+        int centerY = 6 + (rand() % (HEIGHT - 12));
+        
+        // Check if plus is too close to safe zone
+        if (abs(centerX - safeZoneX) < safeRadius + 1 || abs(centerY - safeZoneY) < safeRadius + 1) continue;
+        
+        // Create plus shape
+        obstacles.push_back({centerX, centerY});
+        obstacles.push_back({centerX - 1, centerY});
+        obstacles.push_back({centerX + 1, centerY});
+        obstacles.push_back({centerX, centerY - 1});
+        obstacles.push_back({centerX, centerY + 1});
+    }
+    
+    // Pattern 5: Border obstacles (partial walls near edges)
+    // Top border obstacles
+    for (int x = 3; x < WIDTH - 3; x += 4) {
+        if (abs(x - safeZoneX) > safeRadius) {
+            obstacles.push_back({x, 2});
+        }
+    }
+    
+    // Bottom border obstacles
+    for (int x = 4; x < WIDTH - 4; x += 4) {
+        if (abs(x - safeZoneX) > safeRadius) {
+            obstacles.push_back({x, HEIGHT - 3});
+        }
+    }
+    
+    // Left border obstacles
+    for (int y = 3; y < HEIGHT - 3; y += 4) {
+        if (abs(y - safeZoneY) > safeRadius) {
+            obstacles.push_back({2, y});
+        }
+    }
+    
+    // Right border obstacles
+    for (int y = 4; y < HEIGHT - 4; y += 4) {
+        if (abs(y - safeZoneY) > safeRadius) {
+            obstacles.push_back({WIDTH - 3, y});
+        }
+    }
+    
+    // Remove any duplicates
+    sort(obstacles.begin(), obstacles.end());
+    obstacles.erase(unique(obstacles.begin(), obstacles.end()), obstacles.end());
 }
 
 void Game::DrawMenuBorder() {
@@ -177,7 +291,15 @@ void Game::ShowHelpScreen() {
     
     coord.Y += 1;
     SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
-    cout << "  3 Each food gives 10 points" << endl;
+    cout << "  3 Avoid obstacles (X) - random in each game" << endl;
+    
+    coord.Y += 1;
+    SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
+    cout << "  4 Larger 30x20 game area" << endl;
+    
+    coord.Y += 1;
+    SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
+    cout << "  5 Each food gives 10 points" << endl;
     
     coord.Y += 3;
     SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
@@ -189,22 +311,17 @@ void Game::ShowHelpScreen() {
 void Game::Reset() {
     system("cls");
     snake = Snake(WIDTH, HEIGHT);
-    food.Generate(snake);
+    GenerateObstacles();
+    food.GenerateWithObstacles(snake, obstacles);
     score = 0;
     gameOver = false;
     paused = false;
 }
 
 void Game::Draw() {
-    // Don't use static string buffer - draw directly with colors
+    // Move cursor to top-left for smooth rendering
     COORD coord = {0, 0};
     SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
-
-    cout << "          <<< HOW TO PLAY >>>          " << endl;
-
-    coord.Y += 2;
-    SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
-    cout << "CONTROLS:" << endl;
     
     // Set wall color and draw top border
     colorManager.SetColor(ColorManager::WALL);
@@ -219,18 +336,35 @@ void Game::Draw() {
         cout << '#';
         
         for (int x = 0; x < WIDTH; x++) {
+            bool isObstacle = false;
+            
+            // Check if this position is an obstacle
+            for (const auto& obstacle : obstacles) {
+                if (x == obstacle.first && y == obstacle.second) {
+                    colorManager.SetColor(ColorManager::WALL);
+                    cout << 'X';
+                    colorManager.SetColor(ColorManager::WALL);
+                    isObstacle = true;
+                    break;
+                }
+            }
+            
+            if (isObstacle) {
+                continue;
+            }
+            
             if (x == snake.GetHeadX() && y == snake.GetHeadY()) {
-                colorManager.SetColor(ColorManager::SNAKE_HEAD); // Bright Yellow
+                colorManager.SetColor(ColorManager::SNAKE_HEAD);
                 cout << 'O';
                 colorManager.SetColor(ColorManager::WALL);
             }
             else if (snake.IsBody(x, y)) {
-                colorManager.SetColor(ColorManager::SNAKE_BODY); // Green
+                colorManager.SetColor(ColorManager::SNAKE_BODY);
                 cout << 'o';
                 colorManager.SetColor(ColorManager::WALL);
             }
             else if (x == food.GetX() && y == food.GetY()) {
-                colorManager.SetColor(ColorManager::FOOD); // Bright Red
+                colorManager.SetColor(ColorManager::FOOD);
                 cout << '*';
                 colorManager.SetColor(ColorManager::WALL);
             }
@@ -262,20 +396,21 @@ void Game::Draw() {
     
     // Status line with colors
     if (paused) {
-        colorManager.SetColor(ColorManager::MENU_TITLE); // Bright Yellow
+        colorManager.SetColor(ColorManager::MENU_TITLE);
         cout << "*** GAME PAUSED *** \n\n  Press P to resume" << endl;
     } else {
         if (highScore.IsHighScore(score)) {
-            colorManager.SetColor(ColorManager::HIGH_SCORE); // Bright Green
+            colorManager.SetColor(ColorManager::HIGH_SCORE);
             cout << "High Score Potential! | Controls: WASD/Arrows, P=Pause, X=Exit" << endl;
         } else {
-            colorManager.SetColor(ColorManager::SCORE); // Bright White
+            colorManager.SetColor(ColorManager::SCORE);
             cout << "Controls: WASD/Arrows, P=Pause, X=Exit" << endl;
         }
     }
     
-    // Clear any remaining lines
-    cout << "                              " << endl;
+    // Clear any remaining lines to prevent ghost text
+    cout << "                                                                  " << endl;
+    cout << "                                                                  " << endl;
     
     // Reset to default color
     colorManager.ResetColor();
@@ -321,23 +456,35 @@ void Game::Logic() {
     int headX = snake.GetHeadX();
     int headY = snake.GetHeadY();
     
+    // Check wall collisions
     if (headX < 0 || headX >= WIDTH || headY < 0 || headY >= HEIGHT) {
         EnterHighScore();
         gameOver = true;
         return;
     }
     
+    // Check obstacle collisions
+    for (const auto& obstacle : obstacles) {
+        if (headX == obstacle.first && headY == obstacle.second) {
+            EnterHighScore();
+            gameOver = true;
+            return;
+        }
+    }
+    
+    // Check self collision
     if (snake.CheckSelfCollision()) {
         EnterHighScore();
         gameOver = true;
         return;
     }
     
+    // Check food collision
     if (headX == food.GetX() && headY == food.GetY()) {
-        soundManager.PlayEatSound();  // Food eating sound
+        soundManager.PlayEatSound();
         snake.Grow();
         score += 10;
-        food.Generate(snake);
+        food.GenerateWithObstacles(snake, obstacles);
     }
 }
 
@@ -354,20 +501,38 @@ void Game::EnterHighScore() {
         system("cls");
         
         // Show simple prompt without the fancy border
-        colorManager.SetColor(ColorManager::HIGH_SCORE); // Bright Green
+        colorManager.SetColor(ColorManager::HIGH_SCORE);
         cout << "*** NEW HIGH SCORE! ***" << endl;
         colorManager.ResetColor();
         
         cout << "Your Score: " << score << endl;
         cout << endl;
-        cout << "Enter your name (3 letters): ";
+        cout << "Enter your name (max 10 letters, letters only): ";
         
-        string name;
-        cin >> name;
+        string name = "";
+        char ch;
+        bool nameComplete = false;
         
-        if (name.length() > 3) name = name.substr(0, 3);
-        for (char& c : name) c = toupper(c);
-        if (name.empty()) name = "AAA";
+        while (!nameComplete) {
+            ch = _getch(); // Get character without echo
+            
+            if (ch == 13 && name.length() > 0) { // Enter key
+                nameComplete = true;
+            }
+            else if (ch == 8 && name.length() > 0) { // Backspace
+                name.pop_back();
+                cout << "\b \b"; // Erase the character from console
+            }
+            else if (isalpha(ch) && name.length() < 10) { // Only letters and max 10 chars
+                name += toupper(ch);
+                cout << static_cast<char>(toupper(ch)); // Echo the character
+            }
+            // Ignore all other characters (numbers, symbols, etc.)
+        }
+        
+        cout << endl;
+        cout << "Thank you, " << name << "!" << endl;
+        Sleep(1000);
         
         highScore.AddScore(name, score);
         
@@ -383,7 +548,7 @@ void Game::GameOverScreen() {
     
     if (isNewHighScore) {
         // Show NEW HIGH SCORE in green instead of GAME OVER
-        colorManager.SetColor(ColorManager::HIGH_SCORE); // Bright Green
+        colorManager.SetColor(ColorManager::HIGH_SCORE);
         cout << "##############################" << endl;
         cout << "#       NEW HIGH SCORE!     #" << endl;
         cout << "##############################" << endl;
@@ -397,7 +562,7 @@ void Game::GameOverScreen() {
         cout << "##############################" << endl;
     } else {
         // Show regular GAME OVER in red
-        colorManager.SetColor(ColorManager::GAME_OVER); // Bright Red
+        colorManager.SetColor(ColorManager::GAME_OVER);
         cout << "########################" << endl;
         cout << "#      GAME OVER      #" << endl;
         cout << "########################" << endl;
@@ -455,11 +620,12 @@ void Game::StartGame() {
     cursorInfo.bVisible = false;
     SetConsoleCursorInfo(GetStdHandle(STD_OUTPUT_HANDLE), &cursorInfo);
     
-    gameOver = false; // Ensure game is not over
-    paused = false;   // Ensure game is not paused
+    gameOver = false;
+    paused = false;
     
     Draw();
     
+    // Simple game loop
     while (!gameOver) {
         Input();
         Logic();

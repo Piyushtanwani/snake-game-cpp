@@ -2,7 +2,6 @@
 #include <cstdlib>
 #include <ctime>
 
-// Pre-warm random number generator at program start
 namespace {
     class RandomInitializer {
     public:
@@ -19,6 +18,6 @@ namespace {
 
 int main() {
     Game game;
-    game.Run();  // This now starts with the main menu
+    game.Run();
     return 0;
 }

@@ -5,18 +5,21 @@
 #include "Food.h"
 #include "HighScore.h"
 #include "SoundManager.h"
-#include "ColorManager.h"  // Add this line
+#include "ColorManager.h"
+#include <vector>
+#include <utility>
 
 class Game {
 private:
-    static const int WIDTH = 20;
+    static const int WIDTH = 30;
     static const int HEIGHT = 20;
     
     Snake snake;
     Food food;
     HighScore highScore;
     SoundManager soundManager;
-    ColorManager colorManager;  // Add this line
+    ColorManager colorManager;
+    std::vector<std::pair<int, int>> obstacles;
     int score;
     bool gameOver;
     bool paused;
@@ -32,6 +35,7 @@ private:
     void ShowHelpScreen();
     void DrawMenuBorder();
     void StartGame();
+    void GenerateObstacles(); // Only keep this method
     
 public:
     Game();

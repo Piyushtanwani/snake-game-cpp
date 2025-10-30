@@ -25,7 +25,6 @@ public:
     bool IsHighScore(int score) const;
     void AddScore(const std::string& name, int score);
     void DisplayScores() const;
-    const std::vector<ScoreEntry>& GetScores() const { return scores; }
 };
 
 #endif
