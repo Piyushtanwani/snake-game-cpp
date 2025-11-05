@@ -400,7 +400,7 @@ void Game::Draw() {
     // Status line with colors
     if (paused) {
         colorManager.SetColor(ColorManager::MENU_TITLE);
-        cout << "*** GAME PAUSED *** \n\n  Press P to resume" << endl;
+        PauseGame();
     } else {
         if (highScore.IsHighScore(score)) {
             colorManager.SetColor(ColorManager::HIGH_SCORE);

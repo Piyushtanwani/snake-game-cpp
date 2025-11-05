@@ -3,33 +3,20 @@
 #include <ctime>
 
 // Initialize random seed only once
-namespace {
-    bool randomInitialized = false;
-    void InitializeRandom() {
-        if (!randomInitialized) {
-            srand(static_cast<unsigned int>(time(nullptr)));
-            randomInitialized = true;
-        }
-    }
-}
 
 Food::Food(int width, int height) : maxX(width), maxY(height), type(REGULAR), active(false) {
     // Don't initialize random here - lazy initialization
 }
 
 void Food::Generate(const Snake& snake) {
-    if (!randomInitialized) {
-        InitializeRandom();
-    }
+   
     
     // Default to regular food
     GenerateWithObstacles(snake, std::vector<std::pair<int, int>>());
 }
 
 void Food::GenerateWithObstacles(const Snake& snake, const std::vector<std::pair<int, int>>& obstacles) {
-    if (!randomInitialized) {
-        InitializeRandom();
-    }
+    
     
     // Default to regular food
     type = REGULAR;
@@ -67,9 +54,7 @@ void Food::GenerateWithObstacles(const Snake& snake, const std::vector<std::pair
 }
 
 void Food::GenerateSpecialFood(const Snake& snake) {
-    if (!randomInitialized) {
-        InitializeRandom();
-    }
+   
     
     // Generate position first (same logic as regular food)
     bool invalidPosition;
