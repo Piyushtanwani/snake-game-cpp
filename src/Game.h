@@ -24,6 +24,9 @@ private:
     bool gameOver;
     bool paused;
     
+    // Track food count for special food spawning
+    int foodCount;
+    
     void Draw();
     void Input();
     void Logic();
@@ -35,7 +38,7 @@ private:
     void ShowHelpScreen();
     void DrawMenuBorder();
     void StartGame();
-    void GenerateObstacles(); // Only keep this method
+    void GenerateObstacles();
     
 public:
     Game();

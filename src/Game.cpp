@@ -5,10 +5,11 @@
 #include <string>
 #include <algorithm>
 #include <cctype>
+#include <ctime>
 
 using namespace std;
 
-Game::Game() : snake(WIDTH, HEIGHT), food(WIDTH, HEIGHT), score(0), gameOver(false), paused(false) {
+Game::Game() : snake(WIDTH, HEIGHT), food(WIDTH, HEIGHT), score(0), gameOver(false), paused(false), foodCount(0) {
     GenerateObstacles();
     food.GenerateWithObstacles(snake, obstacles);
 }
@@ -316,6 +317,7 @@ void Game::Reset() {
     score = 0;
     gameOver = false;
     paused = false;
+    foodCount = 0; // Reset food counter
 }
 
 void Game::Draw() {
@@ -323,17 +325,17 @@ void Game::Draw() {
     COORD coord = {0, 0};
     SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
     
-    // Set wall color and draw top border
+    // Draw top border (double width)
     colorManager.SetColor(ColorManager::WALL);
-    for (int i = 0; i < WIDTH + 2; i++)
-        cout << '#';
+    for (int i = 0; i < (WIDTH * 2) + 4; i++)
+        cout << "#";
     cout << endl;
     
     // Draw game area
     for (int y = 0; y < HEIGHT; y++) {
         // Left border
         colorManager.SetColor(ColorManager::WALL);
-        cout << '#';
+        cout << "##";
         
         for (int x = 0; x < WIDTH; x++) {
             bool isObstacle = false;
@@ -342,8 +344,7 @@ void Game::Draw() {
             for (const auto& obstacle : obstacles) {
                 if (x == obstacle.first && y == obstacle.second) {
                     colorManager.SetColor(ColorManager::WALL);
-                    cout << 'X';
-                    colorManager.SetColor(ColorManager::WALL);
+                    cout << "\xDB\xDB";  // Double width block obstacles
                     isObstacle = true;
                     break;
                 }
@@ -353,35 +354,37 @@ void Game::Draw() {
                 continue;
             }
             
+            // Reset to wall color for empty spaces
+            colorManager.SetColor(ColorManager::WALL);
+            
             if (x == snake.GetHeadX() && y == snake.GetHeadY()) {
                 colorManager.SetColor(ColorManager::SNAKE_HEAD);
-                cout << 'O';
-                colorManager.SetColor(ColorManager::WALL);
+                cout << "\xDB\xDB";  // Double width block head
             }
             else if (snake.IsBody(x, y)) {
                 colorManager.SetColor(ColorManager::SNAKE_BODY);
-                cout << 'o';
-                colorManager.SetColor(ColorManager::WALL);
+                cout << "\xDB\xDB";  // Double width block body
             }
-            else if (x == food.GetX() && y == food.GetY()) {
-                colorManager.SetColor(ColorManager::FOOD);
-                cout << '*';
+            else if (x == food.GetX() && y == food.GetY() && food.IsActive()) {
+                // Use food's own color and character
+                colorManager.SetColor(food.GetColor());
+                cout << food.GetDisplayChar() << food.GetDisplayChar(); // Double width
                 colorManager.SetColor(ColorManager::WALL);
-            }
+}
             else {
-                cout << ' ';
+                cout << "  ";  // Double width space
             }
         }
         
         // Right border
         colorManager.SetColor(ColorManager::WALL);
-        cout << '#' << endl;
+        cout << "##" << endl;
     }
     
-    // Draw bottom border
+    // Draw bottom border (double width)
     colorManager.SetColor(ColorManager::WALL);
-    for (int i = 0; i < WIDTH + 2; i++)
-        cout << '#';
+    for (int i = 0; i < (WIDTH * 2) + 4; i++)
+        cout << "#";
     cout << endl;
     
     // Reset color for text
@@ -480,11 +483,30 @@ void Game::Logic() {
     }
     
     // Check food collision
-    if (headX == food.GetX() && headY == food.GetY()) {
-        soundManager.PlayEatSound();
+    if (headX == food.GetX() && headY == food.GetY() && food.IsActive()) {
+        // Play sound based on food type
+        if (food.GetType() == Food::GOLDEN) {
+            Beep(1000, 200); // Special sound for golden food
+            Beep(1200, 200);
+        } else {
+            soundManager.PlayEatSound(); // Regular sound
+        }
+        
+        // Add points based on food type
+        score += food.GetPoints();
         snake.Grow();
-        score += 10;
-        food.GenerateWithObstacles(snake, obstacles);
+        
+        // Increment food counter
+        foodCount++;
+        
+        // Every 5th food is golden, others are regular
+        if (foodCount % 5 == 0) {
+            // Spawn golden food
+            food.GenerateSpecialFood(snake);
+        } else {
+            // Spawn regular food
+            food.GenerateWithObstacles(snake, obstacles);
+        }
     }
 }
 
@@ -630,7 +652,7 @@ void Game::StartGame() {
         Input();
         Logic();
         Draw();
-        Sleep(150);
+        Sleep(80);
     }
     
     cursorInfo.bVisible = true;
