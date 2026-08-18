@@ -20,9 +20,9 @@ private:
 
 public:
     Food(int width, int height);
-    void Generate(const Snake& snake);
-    void GenerateWithObstacles(const Snake& snake, const std::vector<std::pair<int, int>>& obstacles);
-    void GenerateSpecialFood(const Snake& snake);
+    void Generate(const std::vector<Snake>& snakes);
+    void GenerateWithObstacles(const std::vector<Snake>& snakes, const std::vector<std::pair<int, int>>& obstacles);
+    void GenerateSpecialFood(const std::vector<Snake>& snakes);
     
     // Getters
     int GetX() const { return x; }

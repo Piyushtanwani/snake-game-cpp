@@ -63,3 +63,15 @@ bool Snake::IsBody(int x, int y) const {
     }
     return false;
 }
+
+void Snake::SetPosition(int x, int y) {
+    if (body.empty()) return;
+    
+    int dx = x - body[0].x;
+    int dy = y - body[0].y;
+    
+    for (auto& segment : body) {
+        segment.x += dx;
+        segment.y += dy;
+    }
+}

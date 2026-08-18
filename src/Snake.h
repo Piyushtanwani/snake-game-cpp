@@ -25,6 +25,8 @@ public:
     bool CheckSelfCollision() const;
     bool IsBody(int x, int y) const;
     
+    void SetPosition(int x, int y);
+    
     // Getters
     int GetHeadX() const { return body[0].x; }
     int GetHeadY() const { return body[0].y; }

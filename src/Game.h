@@ -14,15 +14,16 @@ private:
     static const int WIDTH = 30;
     static const int HEIGHT = 20;
     
-    Snake snake;
+    std::vector<Snake> snakes;
     Food food;
     HighScore highScore;
     SoundManager soundManager;
     ColorManager colorManager;
     std::vector<std::pair<int, int>> obstacles;
-    int score;
+    std::vector<int> scores;
     bool gameOver;
     bool paused;
+    int loserPlayer;
     
     // Track food count for special food spawning
     int foodCount;
@@ -39,6 +40,7 @@ private:
     void DrawMenuBorder();
     void StartGame();
     void GenerateObstacles();
+    void InitializePlayers();
     
 public:
     Game();

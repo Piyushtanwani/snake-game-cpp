@@ -8,14 +8,14 @@ Food::Food(int width, int height) : maxX(width), maxY(height), type(REGULAR), ac
     // Don't initialize random here - lazy initialization
 }
 
-void Food::Generate(const Snake& snake) {
+void Food::Generate(const std::vector<Snake>& snakes) {
    
     
     // Default to regular food
-    GenerateWithObstacles(snake, std::vector<std::pair<int, int>>());
+    GenerateWithObstacles(snakes, std::vector<std::pair<int, int>>());
 }
 
-void Food::GenerateWithObstacles(const Snake& snake, const std::vector<std::pair<int, int>>& obstacles) {
+void Food::GenerateWithObstacles(const std::vector<Snake>& snakes, const std::vector<std::pair<int, int>>& obstacles) {
     
     
     // Default to regular food
@@ -28,17 +28,21 @@ void Food::GenerateWithObstacles(const Snake& snake, const std::vector<std::pair
         x = rand() % maxX;
         y = rand() % maxY;
         
-        // Check if position is on snake head
-        if (x == snake.GetHeadX() && y == snake.GetHeadY()) {
-            invalidPosition = true;
-            continue;
+        for (const auto& snake : snakes) {
+            // Check if position is on snake head
+            if (x == snake.GetHeadX() && y == snake.GetHeadY()) {
+                invalidPosition = true;
+                break;
+            }
+            
+            // Check if position is on snake body
+            if (snake.IsBody(x, y)) {
+                invalidPosition = true;
+                break;
+            }
         }
         
-        // Check if position is on snake body
-        if (snake.IsBody(x, y)) {
-            invalidPosition = true;
-            continue;
-        }
+        if (invalidPosition) continue;
         
         // Check if position is on any obstacle
         for (const auto& obstacle : obstacles) {
@@ -53,7 +57,7 @@ void Food::GenerateWithObstacles(const Snake& snake, const std::vector<std::pair
     active = true;
 }
 
-void Food::GenerateSpecialFood(const Snake& snake) {
+void Food::GenerateSpecialFood(const std::vector<Snake>& snakes) {
    
     
     // Generate position first (same logic as regular food)
@@ -64,15 +68,18 @@ void Food::GenerateSpecialFood(const Snake& snake) {
         x = rand() % maxX;
         y = rand() % maxY;
         
-        if (x == snake.GetHeadX() && y == snake.GetHeadY()) {
-            invalidPosition = true;
-            continue;
+        for (const auto& snake : snakes) {
+            if (x == snake.GetHeadX() && y == snake.GetHeadY()) {
+                invalidPosition = true;
+                break;
+            }
+            
+            if (snake.IsBody(x, y)) {
+                invalidPosition = true;
+                break;
+            }
         }
-        
-        if (snake.IsBody(x, y)) {
-            invalidPosition = true;
-            continue;
-        }
+        if (invalidPosition) continue;
         
     } while (invalidPosition);
     
